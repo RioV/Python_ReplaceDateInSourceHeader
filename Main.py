@@ -6,19 +6,21 @@ import sys
 
 # Function define
 def get_file_content(file_name):
-    print('get_file_content - file_name = ' + file_name)
     file_to_open = open(file_name, 'r')
 
     file_content_to_be_read = file_to_open.read().splitlines()
     count = 0
     for line_content in file_content_to_be_read:
         count += 1
-        # print('Line = ' + line_content)
         new_content = check_file_content_is_ok_to_be_replace(line_content)
         if new_content != line_content:
+            print ('Update content from')
+            print(line_content)
+            print ('to')
             print(new_content)
+            print('\n')
             replace(file_content_to_be_read, line_content, new_content)
-        if count > 15:
+        if count > 10:
             break
 
     file_to_open.close()
@@ -37,32 +39,36 @@ def replace(l, X, Y):
 def check_file_content_is_ok_to_be_replace (content_tobe_replace):
     # Check first 10 line
     return_value = content_tobe_replace
-    temp_value = content_tobe_replace.strip()
+    # temp_value = content_tobe_replace.strip()
+    temp_value = content_tobe_replace
+    # print('Line value to be process = {}'.format(temp_value))
 
     is_this_line_comment = False
     is_this_line_have_date_time = False
 
     two_first_character = temp_value[:2]
-    # print (two_first_character)
-    if two_first_character == '//':
+    if two_first_character == ' *':
+        # print('Map two first chars')
         is_this_line_comment = True
 
-    if '.' in temp_value:
-        x_last_character = temp_value[-9:]
-        x_last_character = x_last_character.replace('.', '')
-    else:
-        x_last_character = temp_value[-8:]
-    # print(x_last_character)
-
-    if re.match('\d\d/\d\d\/\d\d', x_last_character):
-        # print("it matches!")
+    # Get year from comment line
+    # Check for year with format 2013-2015
+    if len(re.findall('\d\d\d\d-\d\d\d\d', temp_value)) == 1:
+        founded_value = re.findall('\d\d\d\d-\d\d\d\d', temp_value)[0]
         is_this_line_have_date_time = True
-        if '.' in return_value:
-            return_value = return_value[:-2]
-            return_value += '6.'
-        else :
-            return_value = return_value[:-1]
-            return_value += '6'
+    elif len(re.findall('\d\d\d\d - \d\d\d\d', temp_value)) == 1:
+        founded_value = re.findall('\d\d\d\d - \d\d\d\d', temp_value)[0]
+        is_this_line_have_date_time = True
+    elif len(re.findall('\d\d\d\d', temp_value)) == 1:
+        founded_value = re.findall('\d\d\d\d', temp_value)[0]
+        is_this_line_have_date_time = True
+    else:
+        return temp_value
+
+    replace_value = founded_value[:-1]
+    replace_value += '6'
+
+    return_value = return_value.replace(founded_value, replace_value)
 
     if is_this_line_comment and is_this_line_have_date_time:
         return return_value
@@ -77,7 +83,6 @@ fileDiff = 'diffFromPython.txt'
 list_command = sys.argv
 
 if len(list_command) == 3:
-    print (list_command)
     first_version = list_command[1]
     last_version = list_command[2]
 
@@ -88,6 +93,8 @@ if len(list_command) == 3:
     (out, error) = pr.communicate()
 
     fileListChangedGit = open(os.path.dirname(os.getcwd() + '/') + '/' + fileDiff, 'r')
+    if fileListChangedGit:
+        print ('Have list file changed')
     # Get list of changed file
     listFileThatToBeExecute = [];
     for changedFile in fileListChangedGit:
@@ -96,7 +103,10 @@ if len(list_command) == 3:
         if extension == '.h' or extension == '.m':
             listFileThatToBeExecute.append(changedFile)
 
+    print('Number of file to be execute = {}'.format((len(listFileThatToBeExecute))))
+    print ('\n')
     for file_name in listFileThatToBeExecute:
+        print('File = ' + file_name)
         get_file_content(os.getcwd() + '/' + file_name)
 
     os.remove(fileDiff)
